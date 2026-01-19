@@ -149,11 +149,12 @@ int main( int argc, char* argv[] )
 
 	// for simplicity, set a pathology coloring function 
 	
-	std::vector<std::string> (*cell_coloring_function)(Cell*) = my_coloring_function;
-	std::string (*substrate_coloring_function)(double, double, double) = paint_by_density_percentage;
-
+	std::vector<std::string> (*cell_coloring_function)(Cell*) = my_coloring_function; 
+	std::string (*substrate_coloring_function)(double, double, double) = my_coloring_function_for_substrate;
+	void (*cellcount_function)(char*) = my_cellcount_function;
+	
 	sprintf( filename , "%s/initial.svg" , PhysiCell_settings.folder.c_str() ); 
-	SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function, substrate_coloring_function );
+	SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function, substrate_coloring_function, cellcount_function);
 	
 	sprintf( filename , "%s/legend.svg" , PhysiCell_settings.folder.c_str() ); 
 	create_plot_legend( filename , cell_coloring_function ); 
@@ -205,9 +206,9 @@ int main( int argc, char* argv[] )
 			{
 				if( PhysiCell_settings.enable_SVG_saves == true )
 				{	
-					sprintf( filename , "%s/snapshot%08u.svg" , PhysiCell_settings.folder.c_str() , PhysiCell_globals.SVG_output_index );
-					SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function, substrate_coloring_function);
-
+					sprintf( filename , "%s/snapshot%08u.svg" , PhysiCell_settings.folder.c_str() , PhysiCell_globals.SVG_output_index ); 
+					SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function, substrate_coloring_function, cellcount_function );
+					
 					PhysiCell_globals.SVG_output_index++; 
 					PhysiCell_globals.next_SVG_save_time  += PhysiCell_settings.SVG_save_interval;
 				}
@@ -215,6 +216,8 @@ int main( int argc, char* argv[] )
 
 			// update the microenvironment
 			microenvironment.simulate_diffusion_decay( diffusion_dt );
+
+			physimess_mechanics(mechanics_dt);
 			
 			// run PhysiCell 
 			((Cell_Container *)microenvironment.agent_container)->update_all_cells( PhysiCell_globals.current_time );
@@ -242,9 +245,9 @@ int main( int argc, char* argv[] )
 	sprintf( filename , "%s/final" , PhysiCell_settings.folder.c_str() ); 
 	save_PhysiCell_to_MultiCellDS_v2( filename , microenvironment , PhysiCell_globals.current_time ); 
 	
-	sprintf( filename , "%s/final.svg" , PhysiCell_settings.folder.c_str() );
-	SVG_plot(filename, microenvironment, 0.0, PhysiCell_globals.current_time, cell_coloring_function, substrate_coloring_function);
-
+	sprintf( filename , "%s/final.svg" , PhysiCell_settings.folder.c_str() ); 
+	SVG_plot( filename , microenvironment, 0.0 , PhysiCell_globals.current_time, cell_coloring_function, substrate_coloring_function, cellcount_function );
+	
 	// timer 
 	
 	std::cout << std::endl << "Total simulation runtime: " << std::endl; 
