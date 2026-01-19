@@ -161,6 +161,7 @@ void setup_microenvironment( void )
 
 void setup_tissue( void )
 {
+    // domain bounds
     double Xmin = microenvironment.mesh.bounding_box[0];
     double Ymin = microenvironment.mesh.bounding_box[1];
     double Zmin = microenvironment.mesh.bounding_box[2];
@@ -178,85 +179,132 @@ void setup_tissue( void )
     double Yrange = Ymax - Ymin;
     double Zrange = Zmax - Zmin;
 
+    // load cells (Endothelial, RBC, GBM, etc.) from XML/CSV
     load_cells_from_pugixml();
 
     // new fibre related parameters and bools
     bool isFibreFromFile = false;
 
-    for( int i = 0; i < (*all_cells).size(); i++ )
+    // check if fibres already exist (e.g. from CSV) and orient them
+    for( int i = 0; i < (int)(*all_cells).size(); i++ )
     {
-        if (isFibre((*all_cells)[i]))
+        Cell* pC = (*all_cells)[i];
+        if ( isFibre( pC ) )
         {
-            /* fibre positions are given by csv
-               assign fibre orientation and test whether out of bounds */
+            // fibre positions are given by csv: assign orientation and test bounds
             isFibreFromFile = true;
-            static_cast<PhysiMeSS_Fibre*>((*all_cells)[i])->assign_fibre_orientation();
+            static_cast<PhysiMeSS_Fibre*>( pC )->assign_fibre_orientation();
         }
     }
 
-    /* agents have not been added from the file but do want them
-       create some of each agent type */
-    if(!isFibreFromFile)
+    // agents have not been added from the file but do want them: create some of each agent type
+    if( !isFibreFromFile )
     {
-        Cell* pC;
-        std::vector<double> position = {0, 0, 0};
-        for( int k = 0; k < (int)cell_definitions_by_index.size() ; k++ ) 
+        Cell* pC = NULL;
+        std::vector<double> position = { 0.0, 0.0, 0.0 };
+
+        for( int k = 0; k < (int)cell_definitions_by_index.size() ; k++ )
         {
-            Cell_Definition *pCD = cell_definitions_by_index[k];
-            if (!isFibre(pCD))
+            Cell_Definition* pCD = cell_definitions_by_index[k];
+
+            if( !isFibre( pCD ) )
             {
-                for (int n = 0; n < parameters.ints("number_of_cells"); n++) 
+                // non‑fibre cell types: seed parameters.ints("number_of_cells") randomly
+                for( int n = 0; n < parameters.ints( "number_of_cells" ); n++ )
                 {
                     position[0] = Xmin + UniformRandom() * Xrange;
                     position[1] = Ymin + UniformRandom() * Yrange;
                     position[2] = Zmin + UniformRandom() * Zrange;
-                    pC = create_cell(*pCD);
-                    pC->assign_position(position);
+
+                    pC = create_cell( *pCD );
+                    pC->assign_position( position );
                 }
             }
             else
             {
-                for ( int nf = 0 ; nf < parameters.ints("number_of_fibres") ; nf++ ) 
+                // fibre cell types: seed parameters.ints("number_of_fibres") randomly
+                for( int nf = 0 ; nf < parameters.ints( "number_of_fibres" ) ; nf++ )
                 {
                     position[0] = Xmin + UniformRandom() * Xrange;
                     position[1] = Ymin + UniformRandom() * Yrange;
                     position[2] = Zmin + UniformRandom() * Zrange;
-                    pC = create_cell(*pCD);
-                    static_cast<PhysiMeSS_Fibre*>(pC)->assign_fibre_orientation();
-                    static_cast<PhysiMeSS_Fibre*>(pC)->check_out_of_bounds(position);
-                    pC->assign_position(position);
+
+                    pC = create_cell( *pCD );
+
+                    auto* pFibre = static_cast<PhysiMeSS_Fibre*>( pC );
+                    pFibre->assign_fibre_orientation();
+                    pFibre->check_out_of_bounds( position );
+
+                    pC->assign_position( position );
                 }
             }
         }
-        remove_physimess_out_of_bounds_fibres();
     }
 
-    // ECM cells: tangential orientation on circle
-    for (int i = 0; i < (*all_cells).size(); i++)
+    // remove fibres that are outside the domain
+    remove_physimess_out_of_bounds_fibres();
+
+    // -----------------------------------------------------------------
+    // NEW: generate one tangential fibre for every non‑fibre, non‑ECM cell
+    // -----------------------------------------------------------------
+    // assume there is at least one fibre Cell_Definition in getFibreCellDefinitions()
+    std::vector<Cell_Definition*>* fibre_defs = getFibreCellDefinitions();
+    Cell_Definition* pFibreCD = nullptr;
+    if( fibre_defs != nullptr && !fibre_defs->empty() )
     {
-        Cell* pC = (*all_cells)[i];
+        pFibreCD = (*fibre_defs)[0];
+    }
 
-        // check type name coming from your XML/CSV mapping
-        if (pC->type_name == "ecm")
+    if( pFibreCD != nullptr )
+    {
+        // snapshot size because all_cells grows as we add fibres
+        int n_original = (int)(*all_cells).size();
+
+        for( int i = 0; i < n_original; i++ )
         {
-            double x = pC->position[0];
-            double y = pC->position[1];
+            Cell* pCell = (*all_cells)[i];
 
+            // skip existing fibres
+            if( isFibre( pCell ) )
+                continue;
+
+            // skip ECM pseudo‑cells if any remain
+            if( pCell->type_name == "ecm" )
+                continue;
+
+            // create a fibre at this cell's position
+            Cell* pFibreCell = create_cell( *pFibreCD );
+            pFibreCell->assign_position( pCell->position );
+
+            // tangent to circle centered at origin in x–y
+            double x  = pCell->position[0];
+            double y  = pCell->position[1];
             double tx = -y;
             double ty =  x;
-            double norm = sqrt(tx*tx + ty*ty);
-            if (norm > 0.0)
+            double norm = sqrt( tx*tx + ty*ty );
+            if( norm > 0.0 )
             {
                 tx /= norm;
                 ty /= norm;
             }
 
-            pC->phenotype.motility.motility_vector[0] = tx;
-            pC->phenotype.motility.motility_vector[1] = ty;
-            pC->phenotype.motility.motility_vector[2] = 0.0;
+            auto* pFibre = static_cast<PhysiMeSS_Fibre*>( pFibreCell );
+            pFibre->phenotype.motility.motility_vector[0] = tx;
+            pFibre->phenotype.motility.motility_vector[1] = ty;
+            pFibre->phenotype.motility.motility_vector[2] = 0.0;
+
+            // ensure internal representation is consistent
+            pFibre->assign_fibre_orientation();
+            pFibre->check_out_of_bounds( pFibreCell->position );
         }
+
+        // clean up any new fibres that might be out of bounds
+        remove_physimess_out_of_bounds_fibres();
     }
+
+    return;
 }
+
 
 std::vector<std::string> paint_by_cell_pressure( Cell* pCell )
 {

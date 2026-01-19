@@ -4,7 +4,7 @@
 
 #include <list>
 
-#include "../../core/PhysiCell.h"
+#include "C:\Users\birat\Desktop\PhysiCell\core\PhysiCell_cell.h"
 
 // using namespace PhysiCell;
 

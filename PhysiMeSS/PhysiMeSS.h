@@ -1,8 +1,8 @@
 #ifndef __PHYSIMESS__
 #define __PHYSIMESS__
 
-#include "../../core/PhysiCell_cell.h"
-#include "../../modules/PhysiCell_pathology.h"
+#include "C:\Users\birat\Desktop\PhysiCell\core\PhysiCell_cell.h"
+#include "C:\Users\birat\Desktop\PhysiCell\modules\PhysiCell_pathology.h"
 #include "PhysiMeSS_cell.h"
 #include "PhysiMeSS_fibre.h"
 
