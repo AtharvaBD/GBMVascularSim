@@ -182,6 +182,9 @@ void setup_tissue( void )
     // load cells (Endothelial, RBC, GBM, etc.) from XML/CSV
     load_cells_from_pugixml();
 
+    // get Endothelial type ID from definitions
+    int endothelial_type = get_cell_definition( "Endothelial" ).type;
+
     // new fibre related parameters and bools
     bool isFibreFromFile = false;
 
@@ -189,7 +192,7 @@ void setup_tissue( void )
     for( int i = 0; i < (int)(*all_cells).size(); i++ )
     {
         Cell* pC = (*all_cells)[i];
-        if ( isFibre( pC ) )
+        if( isFibre( pC ) )
         {
             // fibre positions are given by csv: assign orientation and test bounds
             isFibreFromFile = true;
@@ -245,7 +248,7 @@ void setup_tissue( void )
     remove_physimess_out_of_bounds_fibres();
 
     // -----------------------------------------------------------------
-    // NEW: generate one tangential fibre for every non‑fibre, non‑ECM cell
+    // Generate one tangential fibre for every Endothelial cell only
     // -----------------------------------------------------------------
     // assume there is at least one fibre Cell_Definition in getFibreCellDefinitions()
     std::vector<Cell_Definition*>* fibre_defs = getFibreCellDefinitions();
@@ -268,11 +271,11 @@ void setup_tissue( void )
             if( isFibre( pCell ) )
                 continue;
 
-            // skip ECM pseudo‑cells if any remain
-            if( pCell->type_name == "ecm" )
+            // only Endothelial cells should produce fibres
+            if( pCell->type != endothelial_type )
                 continue;
 
-            // create a fibre at this cell's position
+            // create a fibre at this endothelial cell's position
             Cell* pFibreCell = create_cell( *pFibreCD );
             pFibreCell->assign_position( pCell->position );
 

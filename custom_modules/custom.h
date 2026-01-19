@@ -67,7 +67,7 @@
 
 #include "C:\Users\birat\Desktop\PhysiCell\core\PhysiCell.h"
 #include "C:\Users\birat\Desktop\PhysiCell\modules\PhysiCell_standard_modules.h" 
-#include "PhysiMeSS\PhysiMeSS.h"
+#include "..\PhysiMeSS\PhysiMeSS.h"
 
 using namespace BioFVM; 
 using namespace PhysiCell;
