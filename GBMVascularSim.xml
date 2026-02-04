@@ -1,0 +1,83 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<MorpheusModel version="4">
+    <Description>
+        <Details></Details>
+        <Title></Title>
+    </Description>
+    <Space>
+        <Lattice class="square">
+            <Neighborhood>
+                <Order>optimal</Order>
+            </Neighborhood>
+            <Size symbol="size" value="200, 200, 0.0"/>
+        </Lattice>
+        <SpaceSymbol symbol="space"/>
+    </Space>
+    <Global>
+        <!-- Ring parameters -->
+        <Constant symbol="R" value="50"/>
+        <!-- ring radius -->
+        <Constant symbol="W" value="15"/>
+        <!-- ring width (controls thickness) -->
+        <!-- Radial distance from center -->
+        <Constant symbol="cx" value="size.x/2"/>
+        <Constant symbol="cy" value="size.y/2"/>
+        <Field symbol="chemical" value="exp( - (sqrt((space.x-cx)^2 + (space.y-cy)^2) - R)^2 / (2*W^2) )"/>
+    </Global>
+    <Time>
+        <StartTime value="0"/>
+        <StopTime value="1000"/>
+        <TimeSymbol symbol="time"/>
+    </Time>
+    <Analysis>
+        <ModelGraph include-tags="#untagged" format="dot" reduced="false"/>
+        <Gnuplotter time-step="50">
+            <Plot>
+                <Field symbol-ref="chemical"/>
+                <Cells value="cell.type"/>
+            </Plot>
+            <Terminal name="png"/>
+        </Gnuplotter>
+    </Analysis>
+    <CellTypes>
+        <CellType name="Endothelial" class="biological">
+            <VolumeConstraint target="1000" strength="1"/>
+            <SurfaceConstraint target="2.2" strength="1" mode="aspherity"/>
+            <Chemotaxis strength="100" field="chemical"/>
+        </CellType>
+        <CellType name="Pericyte" class="biological">
+            <VolumeConstraint target="1000" strength="1"/>
+            <SurfaceConstraint target="2.0" strength="1" mode="aspherity"/>
+            <Chemotaxis strength="50" field="chemical"/>
+        </CellType>
+    </CellTypes>
+    <CPM>
+        <Interaction>
+            <Contact type2="Endothelial" type1="Endothelial" value="10"/>
+        </Interaction>
+        <ShapeSurface scaling="norm">
+            <Neighborhood>
+                <Order>optimal</Order>
+            </Neighborhood>
+        </ShapeSurface>
+        <MonteCarloSampler stepper="edgelist">
+            <!--    <Disabled>
+        <MCSDuration value="1"/>
+    </Disabled>
+-->
+            <MetropolisKinetics temperature="1"/>
+            <Neighborhood>
+                <Order>optimal</Order>
+            </Neighborhood>
+            <MCSDuration value="1"/>
+        </MonteCarloSampler>
+    </CPM>
+    <CellPopulations>
+        <Population type="Endothelial" size="3">
+            <TIFFReader filename="C:/Users/birat/Desktop/GBMVascularSim/three_cells_ring_30.tif"/>
+        </Population>
+        <Population type="Pericyte" size="1">
+            <TIFFReader filename="C:/Users/birat/Desktop/GBMVascularSim/pericyte_outside_ring.tif"/>
+        </Population>
+    </CellPopulations>
+</MorpheusModel>
