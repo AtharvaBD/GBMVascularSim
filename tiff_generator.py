@@ -1,72 +1,39 @@
-from PIL import Image
-import numpy as np
+from math import cos, sin, pi
+from PIL import Image, ImageDraw
 
-def make_three_endothelial_ring(
-    filename="three_endothelial_ring.tif",
-    nx=200, ny=200,
-    R_ring=30,
-    rad_cell=8,
-    values=(80, 160, 240)
-):
-    """3 endothelial cells on a ring of radius R_ring."""
-    cx, cy = nx // 2, ny // 2
-    img = np.zeros((ny, nx), dtype=np.uint8)
-    Y, X = np.indices((ny, nx))
-
-    angles_deg = [0, 120, 240]
-    for val, ang in zip(values, angles_deg):
-        theta = np.deg2rad(ang)
-        cx_i = int(cx + R_ring * np.cos(theta))
-        cy_i = int(cy + R_ring * np.sin(theta))
-
-        r = np.sqrt((X - cx_i)**2 + (Y - cy_i)**2)
-        mask = r <= rad_cell
-        img[mask] = val
-
-    Image.fromarray(img, mode="L").save(filename)
-
-
-from PIL import Image
-import numpy as np
-
-def make_pericytes_outside_ring(
-    filename="pericytes_outside_ring.tif",
-    nx=200, ny=200,
-    R_ring=30,
-    offset=60,
-    rad_cell=5,
-    values=(50, 100, 150, 200, 250),
-    start_angle_deg=45
+def make_centered_circles_tiff(
+    filename: str,
+    width: int = 200,
+    height: int = 200,
+    radius: int = 15,
+    offset: int = 20,
+    n_cells: int = 2
 ):
     """
-    Five pericyte cells just outside the endothelial ring.
-
-    R_ring: radius of endothelial ring
-    offset: how far outside the ring (pixels)
-    start_angle_deg: angle of the first pericyte; others are spaced evenly
+    Create a TIFF with n_cells circular regions around the image center.
+    Each circle gets a unique gray label (1, 2, ..., n_cells).
     """
-    cx, cy = nx // 2, ny // 2
-    img = np.zeros((ny, nx), dtype=np.uint8)
-    Y, X = np.indices((ny, nx))
+    cx, cy = width // 2, height // 2
 
-    R_peri = R_ring + offset
-    n_cells = 5
-    angle_step = 360.0 / n_cells
+    img = Image.new("L", (width, height), 0)
+    draw = ImageDraw.Draw(img)
 
+    def draw_disk(center, r, gray):
+        x, y = center
+        bbox = [x - r, y - r, x + r, y + r]
+        draw.ellipse(bbox, fill=gray)
+
+    # Place n_cells equally spaced on a circle of radius = offset
     for i in range(n_cells):
-        theta = np.deg2rad(start_angle_deg + i * angle_step)
-        cx_p = int(cx + R_peri * np.cos(theta))
-        cy_p = int(cy + R_peri * np.sin(theta))
+        theta = 2 * pi * i / n_cells
+        x = cx + int(offset * cos(theta))
+        y = cy + int(offset * sin(theta))
+        label = i + 1  # labels 1..n_cells
+        draw_disk((x, y), radius, gray=label)
 
-        r = np.sqrt((X - cx_p)**2 + (Y - cy_p)**2)
-        mask = r <= rad_cell
-        img[mask] = values[i]
+    img.save(filename, format="TIFF")
+    print(f"Saved {filename}")
 
-    Image.fromarray(img, mode="L").save(filename)
-
-
-
-if __name__ == "__main__":
-    # Toggle these calls as needed
-    #make_three_endothelial_ring()          # generates three_endothelial_ring.tif
-    make_pericyte_outside_ring()           # generates pericyte_outside_ring.tif
+# Example usage:
+# two cells, slightly spaced horizontally around center
+make_centered_circles_tiff("two_cells_centered.tif", radius=15, offset=20, n_cells=2)
