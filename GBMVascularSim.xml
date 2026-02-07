@@ -21,6 +21,7 @@
         <StartTime value="0"/>
         <StopTime value="500"/>
         <TimeSymbol symbol="time"/>
+        <SaveInterval value="500"/>
     </Time>
     <Analysis>
         <ModelGraph include-tags="#untagged" format="dot" reduced="false"/>
@@ -41,15 +42,15 @@
     </Global>
     <CellTypes>
         <CellType name="cell" class="biological">
-            <VolumeConstraint target="1900" strength="1"/>
-            <SurfaceConstraint target="2" strength="10" mode="aspherity"/>
+            <VolumeConstraint target="2100" strength="1"/>
+            <SurfaceConstraint target="2.2" strength="10" mode="aspherity"/>
             <Chemotaxis strength="1000" field="chemical"/>
             <LengthConstraint target="1.5" strength="1" mode="length"/>
         </CellType>
     </CellTypes>
     <CellPopulations>
         <Population type="cell" size="1">
-            <TIFFReader filename="C:/Users/birat/Desktop/GBMVascularSim/two_center_cells.tif"/>
+            <TIFFReader filename="C:/Users/birat/Desktop/GBMVascularSim/endothelial_cells.tif"/>
         </Population>
     </CellPopulations>
     <CPM>
